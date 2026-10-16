@@ -1,0 +1,4 @@
+version: "0.1.0"
+description: "M5Stack U232/U233 encoder DC motor I2C driver"
+dependencies:
+  idf: ">=5.4"

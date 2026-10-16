@@ -1,0 +1,22 @@
+menu "EncoderMotor Driver demo"
+config TAB5_APP_ENCODER_MOTOR
+    bool
+    default y
+config TAB5_MOTOR_READ_ONLY_PROBE
+    bool "Read real motor telemetry on PORT.A (no motor/address writes)"
+    depends on TAB5_APP_ENCODER_MOTOR
+    default n
+    help
+        Disabled: simulated device and controls for UI review.
+        Enabled: probe 0x2F/0x24 on external SDA53/SCL54, read firmware
+        and telemetry only. All motor/address actions are disabled.
+config TAB5_MOTOR_HARDWARE_CONTROL
+    bool "Control real motor hardware on PORT.A (SDA53/SCL54)"
+    depends on TAB5_APP_ENCODER_MOTOR && !TAB5_MOTOR_READ_ONLY_PROBE
+    default n
+    help
+        Discover default 0x2F/0x24, read real telemetry and enable motor
+        control and persistent I2C address changes from the UI.
+        On connection all channels are stopped. USB diagnostic command
+        'test pwm' performs bounded +/-8 PWM pulses and stops every channel.
+endmenu

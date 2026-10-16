@@ -59,3 +59,11 @@ bin/
 obj/
 
 *.code-workspace
+
+# Generated configuration backups and UI review output
+sdkconfig.old
+sdkconfig.*.old
+*.log
+*.ppm
+review-artifacts/
+evidence/

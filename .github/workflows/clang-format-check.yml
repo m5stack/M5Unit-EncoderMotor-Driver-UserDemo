@@ -1,61 +1,18 @@
-name: clang-format Check
-
-env:
-  INCLUDE_REGEX: ^.*\.((((c|C)(c|pp|xx|\+\+)?$)|((h|H)h?(pp|xx|\+\+)?$))|(inl|ino|pde|proto|cu))$
-
+name: C and C++ formatting
 on:
   push:
-    tags-ignore:
-      - '*.*.*'
-      - 'v*.*.*'
-    branches:
-      - '*'
-    paths:
-      - '*'
-      - '**.ino'
-      - '**.cpp'
-      - '**.hpp'
-      - '**.h'
-      - '**.c'
-      - '**.inl'
-      - '**clang-format-check.yml'
-      - '**.clang-format'
+    paths: ['src/**', '.clang-format', '.github/workflows/clang-format-check.yml']
   pull_request:
-    paths:
-      - '**.ino'
-      - '**.cpp'
-      - '**.hpp'
-      - '**.h'
-      - '**.c'
-      - '**.inl'
-      - '**clang-format-check.yml'
-      - '**.clang-format'
+    paths: ['src/**', '.clang-format', '.github/workflows/clang-format-check.yml']
   workflow_dispatch:
-
 jobs:
   formatting-check:
-    name: Formatting Check
     runs-on: [self-hosted, Linux, X64]
-    strategy:
-      matrix:
-        path:
-          - check: './'    # path to include
-            exclude: ''    # path to exclude
-          #- check: 'src'
-          #  exclude: '(Fonts)' # Exclude file paths containing "Fonts"
-          #- check: 'examples'
-          #  exclude: ''
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Run clang-format style check for C/C++/Protobuf programs.
-        uses: jidicula/clang-format-action@v4.10.2 # Using include-regex 10.x or later
+      - uses: actions/checkout@v4
+      - uses: jidicula/clang-format-action@v4.10.2
         with:
           clang-format-version: '18'
-          check-path: ${{ matrix.path['check'] }}
-          exclude-regex: ${{ matrix.path['exclude'] }}
-          include-regex: ${{ env.INCLUDE_REGEX }}
+          check-path: 'src'
+          include-regex: '^.*\.(c|cpp|h)$'
+          exclude-regex: '(^|/)(build|managed_components|cmake-build-[^/]*|motor_assets|m5stack_tab5|esp_lcd_st7121|pi4ioe5v6408)(/|$)'
