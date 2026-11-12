@@ -23,6 +23,7 @@ static struct fake_bus bus;
 
 static struct {
     int present;
+    m5_motor_type_t type;
     uint8_t reg[256];
 } chips[128];
 
@@ -116,6 +117,16 @@ esp_err_t i2c_master_transmit_receive(i2c_master_dev_handle_t d,
         return ESP_ERR_INVALID_RESPONSE;
     }
 
+    /* Single FW returns only the selected uint16_t, then pads excess reads with zero. */
+    if (chips[d->address].type == M5_MOTOR_SINGLE && tx[0] >= 0xB0 && tx[0] <= 0xB3) {
+        size_t remaining = 2 - (tx[0] - 0xB0) % 2;
+        size_t len = n < remaining ? n : remaining;
+        memcpy(rx, chips[d->address].reg + tx[0], len);
+        memset(rx + len, 0, n - len);
+
+        return ESP_OK;
+    }
+
     memcpy(rx, chips[d->address].reg + tx[0], n);
 
     return ESP_OK;
@@ -164,9 +175,10 @@ static void reset(void)
 /**
  * @brief Seed one present module with deterministic identity and telemetry registers.
  */
-static void chip(uint8_t a)
+static void chip(uint8_t a, m5_motor_type_t type)
 {
     chips[a].present = 1;
+    chips[a].type = type;
     chips[a].reg[0xFF] = a;
     chips[a].reg[0xFE] = 1;
     for (int i = 0; i < 12; i++) {
@@ -182,7 +194,7 @@ static void chip(uint8_t a)
 
 static m5_motor_handle_t open_chip(m5_motor_type_t type, uint8_t address)
 {
-    chip(address);
+    chip(address, type);
     m5_motor_handle_t h = NULL;
     m5_motor_config_t c = {&bus, type, address, 100000, 100};
     CHECK(m5_motor_create(&c, &h) == ESP_OK);
@@ -204,10 +216,10 @@ static void discovery(void)
     m5_motor_handle_t h[2];
     size_t n = 99;
     CHECK(m5_motor_discover(&bus, h, &n) == ESP_OK && n == 0 && writes == 0);
-    chip(0x2F);
+    chip(0x2F, M5_MOTOR_SINGLE);
     CHECK(m5_motor_discover(&bus, h, &n) == ESP_OK && n == 1 && m5_motor_channels(h[0]) == 1);
     close_chip(&h[0]);
-    chip(0x24);
+    chip(0x24, M5_MOTOR_QUAD);
     CHECK(m5_motor_discover(&bus, h, &n) == ESP_OK && n == 2 && writes == 0);
     CHECK(m5_motor_address(h[0]) == 0x2F && m5_motor_channels(h[1]) == 4);
     close_chip(&h[0]);
@@ -215,7 +227,7 @@ static void discovery(void)
     chips[0x2F].present = 0;
     CHECK(m5_motor_discover(&bus, h, &n) == ESP_OK && n == 1 && m5_motor_channels(h[0]) == 4);
     close_chip(&h[0]);
-    chip(0x2F);
+    chip(0x2F, M5_MOTOR_SINGLE);
     fail_read = 0xFE;
     CHECK(m5_motor_discover(&bus, h, &n) == ESP_ERR_TIMEOUT && n == 0 && handles == 0);
     fail_read = -1;
@@ -309,6 +321,8 @@ static void telemetry(void)
     m5_motor_telemetry_t before = t;
     fail_read = 0xB0;
     CHECK(m5_motor_read_telemetry(h, &t) == ESP_ERR_TIMEOUT && !memcmp(&before, &t, sizeof(t)));
+    fail_read = 0xB2;
+    CHECK(m5_motor_read_telemetry(h, &t) == ESP_ERR_TIMEOUT && !memcmp(&before, &t, sizeof(t)));
     fail_read = -1;
     float nan = NAN;
     memcpy(chips[0x24].reg + 0x90, &nan, 4);
@@ -324,7 +338,11 @@ static void telemetry(void)
     h = open_chip(M5_MOTOR_SINGLE, 0x2F);
     fail_read = -1;
     memset(&t, 0xFF, sizeof(t));
-    CHECK(m5_motor_read_telemetry(h, &t) == ESP_OK && t.encoder[3] == 0);
+    CHECK(m5_motor_read_telemetry(h, &t) == ESP_OK && t.encoder[3] == 0 && t.adc == 0xABC && t.vin_mv == 11940);
+    saved = t;
+    fail_read = 0xB2;
+    CHECK(m5_motor_read_telemetry(h, &t) == ESP_ERR_TIMEOUT && !memcmp(&saved, &t, sizeof(t)));
+    fail_read = -1;
     close_chip(&h);
     puts("PASS telemetry: signed decoding, VIN/float, atomic error snapshots, invalid data");
 }
@@ -341,7 +359,7 @@ static void addresses(void)
         int w = writes;
         CHECK(m5_motor_set_address(h, old) == ESP_OK && writes == w);
         CHECK(m5_motor_set_address(h, 7) == ESP_ERR_INVALID_ARG && writes == w);
-        chip(0x30);
+        chip(0x30, (m5_motor_type_t)type);
         CHECK(m5_motor_set_address(h, 0x30) == ESP_ERR_INVALID_STATE && writes == w);
         chips[0x30].present = 0;
         fail_probe = 0x30;

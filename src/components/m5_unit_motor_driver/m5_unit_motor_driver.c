@@ -284,13 +284,19 @@ esp_err_t m5_motor_read_telemetry(m5_motor_handle_t h, m5_motor_telemetry_t *out
         return ESP_ERR_INVALID_RESPONSE;
     }
 
-    e = read_reg(h, 0xB0, bytes, 4);
+    /* Single-channel FW exposes ADC and millivolts as separate uint16_t responses. */
+    e = read_reg(h, 0xB0, bytes, 2);
     if (e != ESP_OK) {
         return e;
     }
 
     t.adc = (uint16_t)bytes[0] | (uint16_t)bytes[1] << 8;
-    t.vin_mv = (uint16_t)bytes[2] | (uint16_t)bytes[3] << 8;
+    e = read_reg(h, 0xB2, bytes, 2);
+    if (e != ESP_OK) {
+        return e;
+    }
+
+    t.vin_mv = (uint16_t)bytes[0] | (uint16_t)bytes[1] << 8;
     if (t.adc > 4095) {
         return ESP_ERR_INVALID_RESPONSE;
     }
