@@ -21,12 +21,12 @@ Unit EncoderMotor Driver（U232）和 Unit 4EncoderMotor Driver（U233）分别�
 
 加载 ESP-IDF 5.5.5 环境后，在项目根目录执行以下命令。
 
-下载并烧录预编译的 [V1 固件](firmware/P359-UnitEncoderMotorDriver-ESP32P4-UserDemo-V1-20261016_0x0.bin)，烧录地址为 `0x0`：
+下载并烧录预编译的 [V1 固件](firmware/P359-UnitEncoderMotorDriver-ESP32P4-UserDemo-V1-20261113_0x0.bin)，烧录地址为 `0x0`：
 
 ```sh
 python -m esptool --chip esp32p4 -p PORT -b 460800 write_flash \
   --flash_mode dio --flash_freq 80m --flash_size 16MB \
-  0x0 firmware/P359-UnitEncoderMotorDriver-ESP32P4-UserDemo-V1-20261016_0x0.bin
+  0x0 firmware/P359-UnitEncoderMotorDriver-ESP32P4-UserDemo-V1-20261113_0x0.bin
 ```
 
 如需从源码编译并烧录：

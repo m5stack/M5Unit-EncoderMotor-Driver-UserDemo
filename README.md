@@ -22,12 +22,12 @@ and its power supply. The default configuration targets ESP32-P4 v1.x.
 
 Activate the ESP-IDF 5.5.5 environment and run the following from the project root.
 
-Flash the prebuilt [V1 firmware](firmware/P359-UnitEncoderMotorDriver-ESP32P4-UserDemo-V1-20261016_0x0.bin) at `0x0`:
+Flash the prebuilt [V1 firmware](firmware/P359-UnitEncoderMotorDriver-ESP32P4-UserDemo-V1-20261113_0x0.bin) at `0x0`:
 
 ```sh
 python -m esptool --chip esp32p4 -p PORT -b 460800 write_flash \
   --flash_mode dio --flash_freq 80m --flash_size 16MB \
-  0x0 firmware/P359-UnitEncoderMotorDriver-ESP32P4-UserDemo-V1-20261016_0x0.bin
+  0x0 firmware/P359-UnitEncoderMotorDriver-ESP32P4-UserDemo-V1-20261113_0x0.bin
 ```
 
 To build and flash from source:
